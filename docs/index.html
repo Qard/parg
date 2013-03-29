@@ -31,6 +31,7 @@
 http://stephenbelanger.com
 (c) 2009-2013 Stephen Belanger
 Parg may be freely distributed under the MIT license.</code></pre>
+<p>TODO: Figure out how to make <code>s:key s:values*</code> work</p>
 <h2>Parse arguments with ease</h2>
 
             </div>
@@ -174,7 +175,7 @@ through the matchers registered for each type short code.</p>
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
       <span class="keyword">var</span> args = Array.prototype.slice.call(arguments)
-      <span class="keyword">var</span> opts = {}</pre></div></div>
+        , opts = {}</pre></div></div>
             
         </li>
         
@@ -192,7 +193,10 @@ support optional arguments after splat arguments this way.</p>
             
             <div class="content"><div class='highlight'><pre>      <span class="keyword">while</span> (steps.length) {
         <span class="keyword">var</span> step = steps.pop()
-          , len = <span class="number">1</span></pre></div></div>
+          , isSplat = !!~step.flags.indexOf(<span class="string">'*'</span>)
+          , isOptional = !!~step.flags.indexOf(<span class="string">'?'</span>)
+          , doneStep = <span class="literal">false</span>
+          , count = <span class="number">0</span></pre></div></div>
             
         </li>
         
@@ -210,13 +214,7 @@ an error. Otherwise, open an array to store the splat arguments in.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!!~step.flags.indexOf(<span class="string">'*'</span>)) {
-          len = args.length - steps.length
-          <span class="keyword">if</span> ( ! len &amp;&amp; !~step.flags.indexOf(<span class="string">'?'</span>)) {
-            <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Splat argument "'</span> + step.name + <span class="string">'" requires at least one value.'</span>))
-          }
-          opts[step.name] = []
-        }</pre></div></div>
+            <div class="content"><div class='highlight'><pre>        isSplat &amp;&amp; (opts[step.name] = [])</pre></div></div>
             
         </li>
         
@@ -236,15 +234,29 @@ that name, ensure it is an array, then add current arg to it.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>        <span class="keyword">for</span> (; len; len--) {
-          <span class="keyword">var</span> arg = args.pop()
-          <span class="keyword">if</span> (step.types.length &amp;&amp; ! parg.oneOf(arg, step.types)) {
-            <span class="keyword">if</span> (!~step.flags.indexOf(<span class="string">'?'</span>)) {
-              <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(
-                <span class="string">' Expected "'</span> + step.name + <span class="string">'" to match one of ["'</span> + step.types.join(<span class="string">'","'</span>) + <span class="string">'"].'</span>
-              ))
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">while</span> ( ! doneStep) {
+          <span class="keyword">if</span> ( ! args.length) {
+            <span class="keyword">if</span> ( ! isOptional &amp;&amp; ( ! isSplat || count &lt; <span class="number">1</span>)) {
+              <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of arguments before matchers in "'</span> + selector + <span class="string">'".'</span>))
             }
-            args.push(arg)
+            doneStep = <span class="literal">true</span>
+          }
+
+          <span class="keyword">var</span> beforeLen = args.length, arg = args.pop()
+          <span class="keyword">if</span> (step.types.length &amp;&amp; ! parg.oneOf(arg, step.types)) {
+            <span class="keyword">if</span> (count &lt; <span class="number">1</span>) {
+              <span class="keyword">if</span> ( ! isOptional) {
+                <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(
+                  <span class="string">'"'</span> + step.name + <span class="string">'" '</span>
+                  + (isSplat ? <span class="string">'requires at least one value'</span> : <span class="string">'must be one'</span>)
+                  + <span class="string">' of types ["'</span> + step.types.join(<span class="string">'", "'</span>) + <span class="string">'"]'</span>
+                ))
+              }
+            }
+            beforeLen &amp;&amp; args.push(arg)
+            doneStep = <span class="literal">true</span>
+            count = <span class="number">0</span>
+
           } <span class="keyword">else</span> {
             <span class="keyword">if</span> (opts[step.name]) {
               parg.oneOf(opts[step.name], [<span class="string">'a'</span>]) || (opts[step.name] = [opts[step.name]])
@@ -252,6 +264,8 @@ that name, ensure it is an array, then add current arg to it.</p>
             } <span class="keyword">else</span> {
               opts[step.name] = arg
             }
+            isSplat || (doneStep = <span class="literal">true</span>)
+            count++
           }
         }
       }</pre></div></div>
@@ -271,7 +285,7 @@ the caller that the resulting data is probably wrong.</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (args.length) {
-        <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of argument matchers before arguments in "'</span> + selector + <span class="string">'".'</span>), opts)
+        <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of matchers before arguments in "'</span> + selector + <span class="string">'".'</span>))
       }</pre></div></div>
             
         </li>
