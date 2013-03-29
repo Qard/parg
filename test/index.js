@@ -12,6 +12,13 @@ describe('parg', function () {
       .have.property('name', 'foo')
   })
 
+  it('should support builder', function () {
+    parg.build('s:name', function (err, opts) {
+      if (err) throw err
+      opts.should.have.property('name', 'bar')
+    })('bar')
+  })
+
   describe('types', function () {
     it('should support boolean', function () {
       parg('b:bool', [true], true).should
