@@ -1,0 +1,19 @@
+{
+  "name": "parg",
+  "version": "0.0.1",
+  "description": "Parse arguments with ease",
+  "keywords": ["arguments","parse","parser"],
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "mocha -r should -G -R spec"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "should": "*"
+  },
+  "author": "Stephen Belanger <admin@stephenbelanger.com>",
+  "license": "MIT"
+}

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>index.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>index.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <pre><code>Parg.js 0.0.1
+http://stephenbelanger.com
+(c) 2009-2013 Stephen Belanger
+Parg may be freely distributed under the MIT license.</code></pre>
+<h2>Parse arguments with ease</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Parg uses a selector string to translate argument lists to objects.
+Each argument is separated by a space and should follow this structure;
+<code>{types}:{name}{flags}</code>.</p>
+<p>The valid <code>types</code> are described above, <code>name</code> can be any string that passes
+a <code>\w</code> regex test, and available flags are <code>*</code> for grouping multiple
+arguments together and <code>?</code> to mark an argument as optional.</p>
+<p>For example, in <code>sn:key :values* o:options? f:callback?</code> the <code>key</code> argument
+must be a string or number, there may be any number of <code>value</code> arguments
+that may be any type as types is omitted,  and it takes an optional
+<code>options</code> hash and <code>callback</code> function.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="function"><span class="keyword">function</span> <span class="title">Parg</span> <span class="params">()</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <h2>Basic usage</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>The most basic usage of parg is inside a function, passing in the
+arguments object <code>var opts = parg(selector, arguments)</code>. The <code>opts</code> value
+returned will be either the parsed arguments, or an error object.</p>
+<p>A simple <code>if (opts instanceof Error) { /* handle error */ }</code> should be
+sufficient to handle any errors that may occur while validating the input.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="function"><span class="keyword">function</span> <span class="title">parg</span> <span class="params">(selector, args, throwErrors)</span> {</span>
+    <span class="keyword">return</span> parg.build(selector, <span class="function"><span class="keyword">function</span> <span class="params">(err, opts)</span> {</span>
+      <span class="keyword">if</span> (err &amp;&amp; throwErrors) <span class="keyword">throw</span> err
+      <span class="keyword">return</span> err ? err : opts
+    }).apply(<span class="literal">null</span>, args)
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <h2>Function wrapping</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Parg can also be used to wrap a function, in which case the call should
+look like <code>parg.build(selector, function (err, opts) {})</code> where <code>err</code> is
+either the first validation error encountered while parsing the arguments
+or null, and <code>opts</code> will be the resulting hash, if the parse succeeded.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  parg.build = <span class="function"><span class="keyword">function</span> <span class="params">(selector, fn)</span> {</span>
+    <span class="keyword">var</span> stages = selector.split(<span class="string">' '</span>)
+      , steps = []</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>In this stage, we parse the selector string. The string is split into
+individual argument definitions at spaces, then each is matched against
+the <code>{types}:{name}{flags}</code> structure. Both <code>types</code> and <code>flags</code> are
+split into single characters and each is used to match different types
+or states.</p>
+<p>All this criteria is stored in a matcher list that will be used later
+to compare against each function argument.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; stages.length; i++) {
+      <span class="keyword">var</span> matches = stages[i].match(<span class="regexp">/(\w*):(\w*)(.*)/</span>)
+
+      steps.push({
+        name: matches[<span class="number">2</span>]
+        , flags: matches[<span class="number">3</span>].split(<span class="string">''</span>)
+        , types: (matches[<span class="number">1</span>] || <span class="string">''</span>).split(<span class="string">''</span>)
+      })
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Then we should return a function to receive the args and run them
+through the matchers registered for each type short code.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+      <span class="keyword">var</span> args = Array.prototype.slice.call(arguments)
+      <span class="keyword">var</span> opts = {}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>Run through the steps from the end back to the start. It&#39;s easier to
+support optional arguments after splat arguments this way.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">while</span> (steps.length) {
+        <span class="keyword">var</span> step = steps.pop()
+          , len = <span class="number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>If we are on a splat argument, we should assume that every remaining
+argument is for the splat. We can determine otherwise later. If
+there are no steps left, and the splat is required we should return
+an error. Otherwise, open an array to store the splat arguments in.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (!!~step.flags.indexOf(<span class="string">'*'</span>)) {
+          len = args.length - steps.length
+          <span class="keyword">if</span> ( ! len &amp;&amp; !~step.flags.indexOf(<span class="string">'?'</span>)) {
+            <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Splat argument "'</span> + step.name + <span class="string">'" requires at least one value.'</span>))
+          }
+          opts[step.name] = []
+        }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>Try matching the number of arguments we expect. If the required
+types have been supplied but don&#39;t match, we should either add
+optional args back in, or return an error.</p>
+<p>If no types are required or the type matched, we should add the
+argument to the resulting hash. If there is an existing field by
+that name, ensure it is an array, then add current arg to it.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">for</span> (; len; len--) {
+          <span class="keyword">var</span> arg = args.pop()
+          <span class="keyword">if</span> (step.types.length &amp;&amp; ! parg.oneOf(arg, step.types)) {
+            <span class="keyword">if</span> (!~step.flags.indexOf(<span class="string">'?'</span>)) {
+              <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(
+                <span class="string">' Expected "'</span> + step.name + <span class="string">'" to match one of ["'</span> + step.types.join(<span class="string">'","'</span>) + <span class="string">'"].'</span>
+              ))
+            }
+            args.push(arg)
+          } <span class="keyword">else</span> {
+            <span class="keyword">if</span> (opts[step.name]) {
+              parg.oneOf(opts[step.name], [<span class="string">'a'</span>]) || (opts[step.name] = [opts[step.name]])
+              opts[step.name].unshift(arg)
+            } <span class="keyword">else</span> {
+              opts[step.name] = arg
+            }
+          }
+        }
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>By now, we should have run out of arguments. If not, we should want
+the caller that the resulting data is probably wrong.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (args.length) {
+        <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of argument matchers before arguments in "'</span> + selector + <span class="string">'".'</span>), opts)
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>Otherwise, return the data happily. :)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">return</span> fn(<span class="literal">null</span>, opts)
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <h2>Validation</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Parg includes an extendable validation system, so custom validations can
+be created to do some more advanced validation of common arguments.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  parg.validators = {}
+  parg.register = <span class="function"><span class="keyword">function</span> <span class="params">(type, validator)</span> {</span>
+    parg.validators[type] = validator
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>Javascript can be kind of stupid sometimes, so we can&#39;t expect a simple
+typeof check to work properly in all cases.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  parg.register(<span class="string">'s'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span> <span class="keyword">return</span> <span class="keyword">typeof</span> v === <span class="string">'string'</span> })
+  parg.register(<span class="string">'n'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span> <span class="keyword">return</span> <span class="keyword">typeof</span> v === <span class="string">'number'</span> })
+  parg.register(<span class="string">'o'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span> <span class="keyword">return</span> <span class="keyword">typeof</span> v === <span class="string">'object'</span> })
+  parg.register(<span class="string">'f'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span> <span class="keyword">return</span> <span class="keyword">typeof</span> v === <span class="string">'function'</span> })
+  parg.register(<span class="string">'b'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span> <span class="keyword">return</span> <span class="keyword">typeof</span> v === <span class="string">'boolean'</span> })
+  parg.register(<span class="string">'r'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span> <span class="keyword">return</span> v <span class="keyword">instanceof</span> RegExp })
+  parg.register(<span class="string">'a'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span> <span class="keyword">return</span> Array.isArray(v) })</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>Detect if the value matches at least one of the supplied types</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  parg.oneOf = <span class="function"><span class="keyword">function</span> <span class="params">(v, types)</span> {</span>
+    <span class="keyword">return</span> types.reduce(<span class="function"><span class="keyword">function</span> <span class="params">(m, type)</span> {</span>
+      <span class="keyword">return</span> m || parg.validators[type](v)
+    }, <span class="literal">false</span>)
+  }
+
+  <span class="keyword">return</span> parg
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h2">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <h2>CommonJS</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Parg supports CommonJS, so it can be used in node.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">if</span> (<span class="keyword">typeof</span> module !== <span class="string">'undefined'</span>) {
+  module.exports = Parg
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
