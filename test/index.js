@@ -12,6 +12,13 @@ describe('parg', function () {
       .have.property('name', 'foo')
   })
 
+  it('should support builder', function () {
+    parg.build('s:name', function (err, opts) {
+      if (err) throw err
+      opts.should.have.property('name', 'bar')
+    })('bar')
+  })
+
   describe('types', function () {
     it('should support boolean', function () {
       parg('b:bool', [true], true).should
@@ -113,7 +120,7 @@ describe('parg', function () {
       opts.should.have.property('after', true)
     })
 
-    it('should catch optional arguments on both ends of a splat', function () {
+    it('should catch same-type values before a splat', function () {
       var opts = parg('s:key s:values*', ['foo','bar','baz'], true)
       opts.should.have.property('values').with.lengthOf(2).and.eql(['bar','baz'])
       opts.should.have.property('key', 'foo')
