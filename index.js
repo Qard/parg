@@ -88,36 +88,36 @@ function Parg () {
         // an error. Otherwise, open an array to store the splat arguments in.
         isSplat && (opts[step.name] = [])
 
-        // Try matching the number of arguments we expect. If the required
-        // types have been supplied but don't match, we should either add
-        // optional args back in, or return an error.
-        // 
-        // If no types are required or the type matched, we should add the
-        // argument to the resulting hash. If there is an existing field by
-        // that name, ensure it is an array, then add current arg to it.
+        // We should loop through arguments continuously until a type check
+        // against the current step fails, so we can support splats. If we run
+        // out of arguments before macthers, something has probably failed.
         while ( ! doneStep) {
           if ( ! args.length) {
             if ( ! isOptional && ( ! isSplat || count < 1)) {
-              return fn(new Error('Ran out of arguments before matchers in "' + selector + '".'))
+              return fn(new Error('Ran out of arguments before matchers in "' + selector + '".'), opts)
             }
             doneStep = true
           }
 
+          // For each argument, check if the required types have been supplied
+          // and match. If they don't, we should either add optional args back
+          // in or return an error.
           var beforeLen = args.length, arg = args.pop()
           if (step.types.length && ! parg.oneOf(arg, step.types)) {
-            if (count < 1) {
-              if ( ! isOptional) {
-                return fn(new Error(
-                  '"' + step.name + '" '
-                  + (isSplat ? 'requires at least one value' : 'must be one')
-                  + ' of types ["' + step.types.join('", "') + '"]'
-                ))
-              }
+            if (count < 1 && ! isOptional) {
+              return fn(new Error(
+                '"' + step.name + '" '
+                + (isSplat ? 'requires at least one value' : 'must be one')
+                + ' of types ["' + step.types.join('", "') + '"]'
+              ))
             }
             beforeLen && args.push(arg)
             doneStep = true
             count = 0
 
+          // If no types are required or the type matched, we should add the
+          // argument to the resulting hash. If there is an existing field by
+          // that name, ensure it is an array, then add current value to it.
           } else {
             if (opts[step.name]) {
               parg.oneOf(opts[step.name], ['a']) || (opts[step.name] = [opts[step.name]])
@@ -131,10 +131,10 @@ function Parg () {
         }
       }
 
-      // By now, we should have run out of arguments. If not, we should want
+      // By now, we should have run out of arguments. If not, we should warn
       // the caller that the resulting data is probably wrong.
       if (args.length) {
-        return fn(new Error('Ran out of matchers before arguments in "' + selector + '".'))
+        return fn(new Error('Ran out of matchers before arguments in "' + selector + '".'), opts)
       }
 
       // Otherwise, return the data happily. :)

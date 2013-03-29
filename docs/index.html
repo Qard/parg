@@ -225,39 +225,64 @@ an error. Otherwise, open an array to store the splat arguments in.</p>
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-11">&#182;</a>
               </div>
-              <p>Try matching the number of arguments we expect. If the required
-types have been supplied but don&#39;t match, we should either add
-optional args back in, or return an error.</p>
-<p>If no types are required or the type matched, we should add the
-argument to the resulting hash. If there is an existing field by
-that name, ensure it is an array, then add current arg to it.</p>
+              <p>We should loop through arguments continuously until a type check
+against the current step fails, so we can support splats. If we run
+out of arguments before macthers, something has probably failed.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>        <span class="keyword">while</span> ( ! doneStep) {
           <span class="keyword">if</span> ( ! args.length) {
             <span class="keyword">if</span> ( ! isOptional &amp;&amp; ( ! isSplat || count &lt; <span class="number">1</span>)) {
-              <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of arguments before matchers in "'</span> + selector + <span class="string">'".'</span>))
+              <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of arguments before matchers in "'</span> + selector + <span class="string">'".'</span>), opts)
             }
             doneStep = <span class="literal">true</span>
-          }
+          }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>For each argument, check if the required types have been supplied
+and match. If they don&#39;t, we should either add optional args back
+in or return an error.</p>
 
-          <span class="keyword">var</span> beforeLen = args.length, arg = args.pop()
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          <span class="keyword">var</span> beforeLen = args.length, arg = args.pop()
           <span class="keyword">if</span> (step.types.length &amp;&amp; ! parg.oneOf(arg, step.types)) {
-            <span class="keyword">if</span> (count &lt; <span class="number">1</span>) {
-              <span class="keyword">if</span> ( ! isOptional) {
-                <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(
-                  <span class="string">'"'</span> + step.name + <span class="string">'" '</span>
-                  + (isSplat ? <span class="string">'requires at least one value'</span> : <span class="string">'must be one'</span>)
-                  + <span class="string">' of types ["'</span> + step.types.join(<span class="string">'", "'</span>) + <span class="string">'"]'</span>
-                ))
-              }
+            <span class="keyword">if</span> (count &lt; <span class="number">1</span> &amp;&amp; ! isOptional) {
+              <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(
+                <span class="string">'"'</span> + step.name + <span class="string">'" '</span>
+                + (isSplat ? <span class="string">'requires at least one value'</span> : <span class="string">'must be one'</span>)
+                + <span class="string">' of types ["'</span> + step.types.join(<span class="string">'", "'</span>) + <span class="string">'"]'</span>
+              ))
             }
             beforeLen &amp;&amp; args.push(arg)
             doneStep = <span class="literal">true</span>
-            count = <span class="number">0</span>
+            count = <span class="number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>If no types are required or the type matched, we should add the
+argument to the resulting hash. If there is an existing field by
+that name, ensure it is an array, then add current value to it.</p>
 
-          } <span class="keyword">else</span> {
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          } <span class="keyword">else</span> {
             <span class="keyword">if</span> (opts[step.name]) {
               parg.oneOf(opts[step.name], [<span class="string">'a'</span>]) || (opts[step.name] = [opts[step.name]])
               opts[step.name].unshift(arg)
@@ -273,29 +298,29 @@ that name, ensure it is an array, then add current arg to it.</p>
         </li>
         
         
-        <li id="section-12">
+        <li id="section-14">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
+                <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <p>By now, we should have run out of arguments. If not, we should want
+              <p>By now, we should have run out of arguments. If not, we should warn
 the caller that the resulting data is probably wrong.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (args.length) {
-        <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of matchers before arguments in "'</span> + selector + <span class="string">'".'</span>))
+        <span class="keyword">return</span> fn(<span class="keyword">new</span> Error(<span class="string">'Ran out of matchers before arguments in "'</span> + selector + <span class="string">'".'</span>), opts)
       }</pre></div></div>
             
         </li>
         
         
-        <li id="section-13">
+        <li id="section-15">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-13">&#182;</a>
+                <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
               <p>Otherwise, return the data happily. :)</p>
 
@@ -308,11 +333,11 @@ the caller that the resulting data is probably wrong.</p>
         </li>
         
         
-        <li id="section-14">
+        <li id="section-16">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-14">&#182;</a>
+                <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
               <h2>Validation</h2>
 
@@ -321,11 +346,11 @@ the caller that the resulting data is probably wrong.</p>
         </li>
         
         
-        <li id="section-15">
+        <li id="section-17">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-15">&#182;</a>
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <p>Parg includes an extendable validation system, so custom validations can
 be created to do some more advanced validation of common arguments.</p>
@@ -340,11 +365,11 @@ be created to do some more advanced validation of common arguments.</p>
         </li>
         
         
-        <li id="section-16">
+        <li id="section-18">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <p>Javascript can be kind of stupid sometimes, so we can&#39;t expect a simple
 typeof check to work properly in all cases.</p>
@@ -362,11 +387,11 @@ typeof check to work properly in all cases.</p>
         </li>
         
         
-        <li id="section-17">
+        <li id="section-19">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <p>Detect if the value matches at least one of the supplied types</p>
 
@@ -384,11 +409,11 @@ typeof check to work properly in all cases.</p>
         </li>
         
         
-        <li id="section-18">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap for-h2">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <h2>CommonJS</h2>
 
@@ -397,11 +422,11 @@ typeof check to work properly in all cases.</p>
         </li>
         
         
-        <li id="section-19">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <p>Parg supports CommonJS, so it can be used in node.</p>
 
