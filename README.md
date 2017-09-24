@@ -1,4 +1,6 @@
 # Parg
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/Qard/parg.svg)](https://greenkeeper.io/)
 [![Build Status](https://travis-ci.org/Qard/parg.png)](https://travis-ci.org/Qard/parg)
 
 Parg lets you parse arguments with ease
